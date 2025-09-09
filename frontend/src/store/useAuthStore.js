@@ -17,11 +17,13 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
-
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
-      console.log("Error in checkAuth:", error);
+      // Don't log 401 errors as they're expected when not logged in
+      if (error.response?.status !== 401) {
+        console.log("Error in checkAuth:", error);
+      }
       set({ authUser: null });
     } finally {
       set({ isCheckingAuth: false });
@@ -32,13 +34,33 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
-      toast.success("Account created successfully");
-      get().connectSocket();
+      toast.success("Account created successfully! Please check your email to verify your account.");
+      return { success: true, email: data.email };
     } catch (error) {
       toast.error(error.response.data.message);
+      return { success: false };
     } finally {
       set({ isSigningUp: false });
+    }
+  },
+
+  verifyEmail: async (token) => {
+    try {
+      const res = await axiosInstance.post("/auth/verify-email", { token });
+      set({ authUser: res.data.user });
+      get().connectSocket();
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  resendVerificationEmail: async (email) => {
+    try {
+      const res = await axiosInstance.post("/auth/resend-verification", { email });
+      return res.data;
+    } catch (error) {
+      throw error;
     }
   },
 
