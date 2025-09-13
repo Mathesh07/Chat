@@ -3,9 +3,11 @@ import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.MODE === "development"
-  ? "http://localhost:5001"
-  : import.meta.env.VITE_SOCKET_URL;
+// Use Render backend URL in production
+const SOCKET_URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5001"
+    : "https://chat-1-qs27.onrender.com";
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -23,7 +25,7 @@ export const useAuthStore = create((set, get) => ({
       get().connectSocket();
     } catch (error) {
       if (error.response?.status !== 401) {
-        console.log("Error in checkAuth:", error);
+        console.error("Error in checkAuth:", error);
       }
       set({ authUser: null });
     } finally {
@@ -34,8 +36,10 @@ export const useAuthStore = create((set, get) => ({
   signup: async (data) => {
     set({ isSigningUp: true });
     try {
-      const res = await axiosInstance.post("/auth/signup", data);
-      toast.success("Account created successfully! Please check your email to verify your account.");
+      await axiosInstance.post("/auth/signup", data);
+      toast.success(
+        "Account created successfully! Please check your email to verify your account."
+      );
       return { success: true, email: data.email };
     } catch (error) {
       toast.error(error.response?.data?.message || "Signup failed");
@@ -100,6 +104,7 @@ export const useAuthStore = create((set, get) => ({
 
     const socket = io(SOCKET_URL, {
       query: { userId: authUser._id },
+      transports: ["websocket"],
       withCredentials: true,
     });
 
