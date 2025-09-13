@@ -99,24 +99,44 @@ export const useAuthStore = create((set, get) => ({
   },
 
   connectSocket: () => {
-    const { authUser } = get();
-    if (!authUser || get().socket?.connected) return;
+    const { authUser, socket } = get();
+    if (!authUser) return;
 
-    const socket = io(SOCKET_URL, {
+    // Prevent duplicate socket initialization
+    if (socket?.connected) return;
+
+    const newSocket = io(SOCKET_URL, {
       query: { userId: authUser._id },
       transports: ["websocket"],
       withCredentials: true,
     });
 
-    socket.connect();
-    set({ socket });
+    newSocket.connect();
 
-    socket.on("getOnlineUsers", (userIds) => {
+    // Clear old listeners before adding new ones
+    newSocket.removeAllListeners();
+
+    // Now safely add listeners
+    newSocket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
+
+    newSocket.on("newMessage", (message) => {
+      console.log("Received message:", message);
+      // Update your message store here
+    });
+
+    set({ socket: newSocket });
   },
 
+
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const { socket } = get();
+    if (socket?.connected) {
+      socket.removeAllListeners(); // prevent duplicate events
+      socket.disconnect();
+      set({ socket: null });
+    }
   },
+
 }));
