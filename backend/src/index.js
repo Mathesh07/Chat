@@ -29,6 +29,10 @@ app.use(cors({
   credentials: true
 }));
 
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,  // Required for cookies or auth headers
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);

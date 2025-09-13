@@ -141,8 +141,10 @@ export const verifyEmail = async (req, res) => {
     await sendWelcomeEmail(user.email, user.fullName);
 
     // Generate JWT token and log the user in
-    generateToken(user._id, res);
 
+    generateToken(user._id, res);
+    console.log("User verified and logged in:", user.email);
+    
     res.status(200).json({
       message: "Email verified successfully",
       user: {
